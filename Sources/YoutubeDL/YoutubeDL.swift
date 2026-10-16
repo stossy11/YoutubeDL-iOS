@@ -85,6 +85,36 @@ public struct Info: Codable {
     public var __has_drm: Bool?
 }
 
+public struct HomeFeedVideo: Decodable {
+    public let id: String
+    public let title: String?
+    public let url: String?
+    public let channel: String?
+    public let channel_url: String?
+    public let duration: Double?
+    public let thumbnails: [Thumbnail]?
+
+    public struct Thumbnail: Decodable {
+        public let url: String
+        public let width: Int?
+        public let height: Int?
+    }
+
+    public var videoURL: URL? {
+        URL(string: url ?? "https://www.youtube.com/watch?v=\(id)")
+    }
+
+    public var thumbnailURL: URL? {
+        guard let thumbnail = thumbnails?.max(by: {
+            ($0.width ?? 0) < ($1.width ?? 0)
+        }) else {
+            return nil
+        }
+
+        return URL(string: thumbnail.url)
+    }
+}
+
 public extension Info {
     var safeTitle: String {
         String(title[..<(title.index(title.startIndex, offsetBy: 40, limitedBy: title.endIndex) ?? title.endIndex)])
@@ -575,10 +605,16 @@ open class YoutubeDL: NSObject {
         }
     }
    
-    open func extractInfo(url: URL) async throws -> ([Format], Info) {
+    open func extractInfo(url: URL, cookiesFile: URL? = nil) async throws -> ([Format], Info) {
         let pythonObject: PythonObject
-        if let _pythonObject = self.pythonObject {
-            pythonObject = _pythonObject
+    
+        if let cookiesFile {
+            let cookieOptions = Python.dict(self.options ?? defaultOptions)
+            cookieOptions["cookiefile"] = PythonObject(cookiesFile.path)
+    
+            pythonObject = try await makePythonObject(cookieOptions)
+        } else if let existing = self.pythonObject {
+            pythonObject = existing
         } else {
             pythonObject = try await makePythonObject()
         }
@@ -598,6 +634,42 @@ open class YoutubeDL: NSObject {
         }
         
         return (formats, try decoder.decode(Info.self, from: info))
+    }
+
+    open func homeFeed(limit: Int = 20, cookiesFile: URL? = nil) async throws -> [HomeFeedVideo] {
+        guard limit > 0 else { return [] }
+    
+        let module = try await loadPythonModule()
+    
+        var feedOptions: PythonObject = [
+            "extract_flat": "in_playlist",
+            "playlistend": limit,
+            "quiet": true,
+        ]
+    
+        if let cookiesFile {
+            feedOptions["cookiefile"] = PythonObject(cookiesFile.path)
+        }
+    
+        let ydl = module.YoutubeDL(feedOptions)
+    
+        let info = try ydl.extract_info.throwing.dynamicallyCall(
+            withKeywordArguments: [
+                "": ":ytrec",
+                "download": false,
+                "process": true,
+            ]
+        )
+    
+        // Materialize entries in case yt-dlp returns a lazy collection.
+        let entries = Python.list(info["entries"])
+    
+        let videos = try PythonDecoder().decode(
+            [HomeFeedVideo?].self,
+            from: entries
+        )
+    
+        return videos.compactMap { $0 }
     }
 
     open func profilePictureURL(url: URL) async throws -> URL? {
