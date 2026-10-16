@@ -475,7 +475,7 @@ open class YoutubeDL: NSObject {
         }
         
 //        print(#function, args)
-        return args[0] == "ffmpeg" ? ffmpeg(args) : ffprobe(args)
+        return 0
     }
     
     var willTranscode: (() -> ((Double) -> Void)?)?
