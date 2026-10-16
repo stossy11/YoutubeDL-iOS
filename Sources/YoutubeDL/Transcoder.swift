@@ -23,7 +23,6 @@
 //
 
 import Foundation
-import FFmpegSupport
 
 public typealias TimeRange = Range<TimeInterval>
 
@@ -40,79 +39,7 @@ open class Transcoder {
     
     @available(iOS 13.0, *)
     open func transcode(from: URL, to url: URL, timeRange: TimeRange?, bitRate: Double?) throws {
-        let pipe = Pipe()
-        Task {
-            if #available(iOS 15.0, *) {
-                var info = [String: String]()
-                let maxTime: Double
-                if let timeRange = timeRange {
-                    maxTime = (timeRange.upperBound - timeRange.lowerBound) * 1_000_000
-                } else {
-                    maxTime = 1_000_000 // FIXME: probe?
-                }
-                print(#function, "await lines", pipe.fileHandleForReading)
-                for try await line in pipe.fileHandleForReading.bytes.lines {
-                    //                    print(#function, line)
-                    let components = line.split(separator: "=")
-                    assert(components.count == 2)
-                    let key = String(components[0])
-                    info[key] = String(components[1])
-                    if key == "progress" {
-//                        print(#function, info)
-                        if let time = Int(info["out_time_us"] ?? ""),
-                           time >= 0 { // FIXME: reset global variable(s) causing it
-                            let progress = Double(time) / maxTime
-                            print(#function, "progress:", progress
-//                                  , info["out_time_us"] ?? "nil", time
-                            )
-                            progressBlock?(progress)
-                        }
-                        guard info["progress"] != "end" else { break }
-                        info.removeAll()
-                    }
-                }
-                print(#function, "no more lines?", pipe.fileHandleForReading)
-            } else {
-                // Fallback on earlier versions
-            }
-        }
-        
-        var args = [
-            "FFmpeg-iOS",
-            "-progress", "pipe:\(pipe.fileHandleForWriting.fileDescriptor)",
-            "-nostats",
-        ]
-        
-        if let timeRange = timeRange {
-            args += [
-                "-ss", "\(timeRange.lowerBound)",
-                "-t", "\(timeRange.upperBound - timeRange.lowerBound)",
-            ]
-        }
-        
-        args += [
-            "-i", from.path,
-        ]
-        
-        if let bitRate = bitRate {
-            args += [
-                "-b:v", "\(Int(bitRate))k",
-            ]
-        }
-        
-        args += [
-            "-c:v", "h264_videotoolbox",
-            url.path,
-        ]
-        
-        let code = ffmpeg(args)
-        print(#function, code)
-        
-        try pipe.fileHandleForWriting.close()
-        
-        guard code == 0 else {
-            throw FFmpegError.exit(code: code)
-        }
+         throw FFmpegError.exit(code: 69)
     }
 }
 
