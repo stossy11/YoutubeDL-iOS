@@ -320,7 +320,7 @@ open class YoutubeDL: NSObject {
         
         let sys = try Python.attemptImport("sys")
         if !(Array(sys.path) ?? []).contains(Self.pythonModuleURL.path) {
-            // injectFakePopen(handler: popenHandler)
+            injectFakePopen(handler: popenHandler)
             
             sys.path.insert(1, Self.pythonModuleURL.path)
         }
@@ -338,10 +338,7 @@ open class YoutubeDL: NSObject {
             class Pop:
                 def __init__(self, *args, **kwargs):
                     print('Popen.__init__:', self, args)#, kwargs)
-                    if args[0][0] in ['ffmpeg', 'ffprobe']:
-                        self.__args = args
-                    else:
-                        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), args[0])
+                    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), args[0])
             
                 def communicate(self, *args, **kwargs):
                     print('Popen.communicate:', self, args, kwargs)
