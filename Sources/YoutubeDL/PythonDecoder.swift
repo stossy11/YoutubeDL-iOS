@@ -328,7 +328,7 @@ struct _SingleValueDecodingContainer: SingleValueDecodingContainer {
     var codingPath: [CodingKey]
     
     func decodeNil() -> Bool {
-        fatalError()
+        pythonObject == Python.None
     }
     
     func decode(_ type: Bool.Type) throws -> Bool {
