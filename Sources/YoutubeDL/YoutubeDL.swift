@@ -26,7 +26,6 @@ import PythonSupport
 import AVFoundation
 import Photos
 import UIKit
-import FFmpegSupport
 
 // https://github.com/pvieito/PythonKit/pull/30#issuecomment-751132191
 let RTLD_DEFAULT = UnsafeMutableRawPointer(bitPattern: -2)
