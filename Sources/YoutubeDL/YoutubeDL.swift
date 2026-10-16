@@ -644,6 +644,7 @@ open class YoutubeDL: NSObject {
         var feedOptions: PythonObject = [
             "extract_flat": "in_playlist",
             "playlistend": PythonObject(limit),
+            "nocheckcertificate": true,
             "quiet": true,
         ]
     
@@ -686,6 +687,7 @@ open class YoutubeDL: NSObject {
         
         let channelOptions: PythonObject = [
             "playlist_items": "0",
+            "nocheckcertificate": true,
             "quiet": true,
         ]
         let pythonObject = module.YoutubeDL(channelOptions)
