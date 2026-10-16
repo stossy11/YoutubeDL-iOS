@@ -643,7 +643,7 @@ open class YoutubeDL: NSObject {
     
         var feedOptions: PythonObject = [
             "extract_flat": "in_playlist",
-            "playlistend": limit,
+            "playlistend": "\(limit)",
             "quiet": true,
         ]
     
