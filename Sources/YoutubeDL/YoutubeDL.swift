@@ -93,6 +93,16 @@ public struct HomeFeedVideo: Decodable {
     public let channel_url: String?
     public let duration: Double?
     public let thumbnails: [Thumbnail]?
+    public let view_count: Int?
+    public var description: String?
+    public var is_live: Bool?
+    public var was_live: Bool?
+    public var live_status: String?
+    public let timestamp: Double?
+
+    public var uploadDate: Date? {
+        timestamp.map { Date(timeIntervalSince1970: $0) }
+    }
 
     public struct Thumbnail: Decodable {
         public let url: String
@@ -646,6 +656,11 @@ open class YoutubeDL: NSObject {
             "playlistend": PythonObject(limit),
             "nocheckcertificate": true,
             "quiet": true,
+            "extractor_args": [
+                "youtubetab": [
+                    "approximate_date": ["true"]
+                ]
+            ],
         ]
     
         if let cookiesFile {
