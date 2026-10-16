@@ -599,6 +599,43 @@ open class YoutubeDL: NSObject {
         
         return (formats, try decoder.decode(Info.self, from: info))
     }
+
+    open func profilePictureURL(url: URL) async throws -> URL? {
+        struct ChannelInfo: Decodable {
+            struct Thumbnail: Decodable {
+                let id: String?
+                let url: String
+            }
+    
+            let thumbnails: [Thumbnail]?
+        }
+        
+        let module = try await loadPythonModule()
+        
+        let channelOptions: PythonObject = [
+            "playlist_items": "0",
+            "quiet": true,
+        ]
+        let pythonObject = module.YoutubeDL(channelOptions)
+    
+        let info = try pythonObject.extract_info.throwing.dynamicallyCall(
+            withKeywordArguments: [
+                "": url.absoluteString,
+                "download": false,
+                "process": true,
+            ]
+        )
+    
+        let channel = try PythonDecoder().decode(ChannelInfo.self, from: info)
+    
+        guard let avatar = channel.thumbnails?.first(where: {
+            $0.id == "avatar_uncropped"
+        }) else {
+            return nil
+        }
+    
+        return URL(string: avatar.url)
+    }
     
     func tryMerge(directory: URL, title: String, timeRange: TimeRange?) -> Bool {
         let t0 = ProcessInfo.processInfo.systemUptime
