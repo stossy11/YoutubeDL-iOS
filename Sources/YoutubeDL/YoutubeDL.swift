@@ -642,6 +642,44 @@ open class YoutubeDL: NSObject {
         return (formats, try decoder.decode(Info.self, from: info))
     }
 
+    open func search(
+        query: String,
+        limit: Int = 10,
+        provider: String = "ytsearch",
+        cookiesFile: URL? = nil
+    ) async throws -> [Info] {
+        let pythonObject: PythonObject
+        
+        let searchOptions = Python.dict(self.options ?? defaultOptions)
+        searchOptions["extract_flat"] = PythonObject("in_playlist")
+        searchOptions["skip_download"] = PythonObject(true)
+        if let cookiesFile {
+            searchOptions["cookiefile"] = PythonObject(cookiesFile.path)
+        }
+        
+        pythonObject = try await makePythonObject(searchOptions)
+    
+        let searchURL = "\(provider)\(limit):\(query)"
+        print(#function, searchURL)
+    
+        let result = try pythonObject.extract_info.throwing.dynamicallyCall(
+            withKeywordArguments: ["": searchURL, "download": false, "process": true]
+        )
+    
+        let entries = result["entries"]
+        guard entries != Python.None else { return [] }
+    
+        let decoder = PythonDecoder()
+        var results: [Info] = []
+        for entry in entries {
+            guard entry != Python.None else { continue }
+            if let info = try? decoder.decode(Info.self, from: entry) {
+                results.append(info)
+            }
+        }
+        return results
+    }
+
     open func homeFeed(limit: Int = 20, cookiesFile: URL? = nil) async throws -> [HomeFeedVideo] {
         guard limit > 0 else { return [] }
     
